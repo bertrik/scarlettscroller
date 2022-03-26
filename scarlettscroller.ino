@@ -5,6 +5,7 @@
 
 #include "framebuffer.h"
 #include "leddriver.h"
+#include "draw.h"
 
 #include <ESP8266WiFi.h>
 #include <ESP8266mDNS.h>
@@ -82,6 +83,16 @@ static int do_pat(int argc, char *argv[])
     return CMD_OK;
 }
 
+static int do_text(int argc, char *argv[])
+{
+    if (argc < 2) {
+        return CMD_ARG;
+    }
+
+    draw_text(argv[1], 0, 255, 0);
+    return CMD_OK;
+}
+
 static int do_fps(int argc, char *argv[])
 {
     print("Measuring ...");
@@ -117,6 +128,7 @@ static int do_help(int argc, char *argv[]);
 static const cmd_t commands[] = {
     { "pix", do_pix, "<col> <row> [intensity] Set pixel" },
     { "pat", do_pat, "<pattern> Set pattern"},
+    { "text", do_text, "<text> Draw test"},
     { "fps", do_fps, "Show FPS" },
     { "enable", do_enable, "[0|1] Enable/disable" },
     { "reboot", do_reboot, "Reboot" },
@@ -149,7 +161,7 @@ void setup(void)
     led_init(vsync);
 
     // get ESP id
-    snprintf(esp_id, sizeof(esp_id), "esp-ledsign-%06x", ESP.getChipId());
+    snprintf(esp_id, sizeof(esp_id), "scarlett-%06x", ESP.getChipId());
     Serial.begin(115200);
     print("\n%s\n", esp_id);
 
@@ -157,6 +169,7 @@ void setup(void)
 
 //    wifiManager.autoConnect(esp_id);
 
+    draw_init((uint8_t *)framebuffer);
     led_enable();
 }
 
@@ -165,8 +178,8 @@ void loop(void)
     // parse command line
     bool haveLine = false;
     if (Serial.available()) {
-        char c;
-        haveLine = EditLine(Serial.read(), &c);
+        char c = Serial.read();
+        haveLine = EditLine(c, &c);
         Serial.write(c);
         if (haveLine) {
             int result = cmd_process(commands, editline);
