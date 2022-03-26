@@ -42,13 +42,11 @@ static void IRAM_ATTR led_hsync(void)
             int val = rowbuf[col];
             val += framebuffer[row][col];
             rowbuf[col] = val;
-        
-            uint8_t c = val > 255;
+            bool c = val > 255;
 
             // write data
             FAST_GPIO_WRITE(PIN_SCLK, 0);
             FAST_GPIO_WRITE(PIN_G, c);
-            FAST_GPIO_WRITE(PIN_R, c);
             FAST_GPIO_WRITE(PIN_SCLK, 1);
         }
 
