@@ -30,10 +30,60 @@ static int do_pix(int argc, char *argv[])
     int x = atoi(argv[1]);
     int y = atoi(argv[2]);
     uint8_t c = atoi(argv[3]);
-    if ((x >= 80) || (y >= 8)) {
+    if ((x >= 80) || (y >= 7)) {
         return CMD_ARG;
     }
     framebuffer[y][x] = c;
+    return CMD_OK;
+}
+
+static void draw_fill(uint8_t c)
+{
+    memset(framebuffer, c, sizeof(framebuffer));
+}
+
+static int do_pat(int argc, char *argv[])
+{
+    if (argc < 2) {
+        return CMD_ARG;
+    }
+    int pat = atoi(argv[1]);
+
+    switch (pat) {
+    case 0:
+        print("All clear\n");
+        draw_fill(0);
+        break;
+    case 1:
+        print("All red\n");
+        draw_fill(255);
+        break;
+    case 2:
+        print("Top half\n");
+        memset(framebuffer, 0, sizeof(framebuffer));
+        memset(framebuffer, 1, sizeof(framebuffer) / 2);
+        break;
+    case 3:
+        print("Left half\n");
+        for (int y = 0; y < 7; y++) {
+            for (int x = 0; x < 80; x++) {
+                framebuffer[y][x] = (x < 40) ? 1 : 0;
+            }
+        }
+        break;
+    case 4:
+        print("Blokjes\n");
+        for (int y = 0; y < 7; y++) {
+            for (int x = 0; x < 80; x++) {
+                framebuffer[y][x] = (x + y) & 1;
+            }
+        }
+        break;
+    default:
+        print("Unhandled pattern %d\n", pat);
+        return CMD_ARG;
+    }
+
     return CMD_OK;
 }
 
@@ -71,6 +121,7 @@ static int do_reboot(int argc, char *argv[])
 static int do_help(int argc, char *argv[]);
 static const cmd_t commands[] = {
     { "pix", do_pix, "<col> <row> [intensity] Set pixel" },
+    { "pat", do_pat, "<pattern> Set pattern"},
     { "fps", do_fps, "Show FPS" },
     { "enable", do_enable, "[0|1] Enable/disable" },
     { "reboot", do_reboot, "Reboot" },
@@ -122,27 +173,27 @@ void loop(void)
         char c;
         haveLine = EditLine(Serial.read(), &c);
         Serial.write(c);
-    }
-    if (haveLine) {
-        int result = cmd_process(commands, editline);
-        switch (result) {
-        case CMD_OK:
-            print("OK\n");
-            break;
-        case CMD_NO_CMD:
-            break;
-        case CMD_UNKNOWN:
-            print("Unknown command, available commands:\n");
-            show_help(commands);
-            break;
-        case CMD_ARG:
-            print("Invalid argument(s)\n");
-            break;
-        default:
-            print("%d\n", result);
-            break;
+        if (haveLine) {
+            int result = cmd_process(commands, editline);
+            switch (result) {
+            case CMD_OK:
+                print("OK\n");
+                break;
+            case CMD_NO_CMD:
+                break;
+            case CMD_UNKNOWN:
+                print("Unknown command, available commands:\n");
+                show_help(commands);
+                break;
+            case CMD_ARG:
+                print("Invalid argument(s)\n");
+                break;
+            default:
+                print("%d\n", result);
+                break;
+            }
+            print(">");
         }
-        print(">");
     }
     // network update
 //    MDNS.update();
