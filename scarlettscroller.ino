@@ -14,11 +14,13 @@
 #include <WiFiUdp.h>
 
 #define print Serial.printf
+#define UDP_PORT    8888
 
 static WiFiManager wifiManager;
 static WiFiUDP udpServer;
+static uint8_t udpframe[LED_HEIGHT * LED_WIDTH];
 
-static char esp_id[64];
+static char espid[64];
 static char editline[120];
 static uint8_t framebuffer[LED_HEIGHT][LED_WIDTH];
 static volatile uint32_t frame_counter = 0;
@@ -127,8 +129,8 @@ static int do_reboot(int argc, char *argv[])
 static int do_help(int argc, char *argv[]);
 static const cmd_t commands[] = {
     { "pix", do_pix, "<col> <row> [intensity] Set pixel" },
-    { "pat", do_pat, "<pattern> Set pattern"},
-    { "text", do_text, "<text> Draw test"},
+    { "pat", do_pat, "<pattern> Set pattern" },
+    { "text", do_text, "<text> Draw test" },
     { "fps", do_fps, "Show FPS" },
     { "enable", do_enable, "[0|1] Enable/disable" },
     { "reboot", do_reboot, "Reboot" },
@@ -161,25 +163,37 @@ void setup(void)
     led_init(vsync);
 
     // get ESP id
-    snprintf(esp_id, sizeof(esp_id), "scarlett-%06x", ESP.getChipId());
+    snprintf(espid, sizeof(espid), "scarlett-%06x", ESP.getChipId());
     Serial.begin(115200);
-    print("\n%s\n", esp_id);
+    print("\n%s\n", espid);
 
     EditInit(editline, sizeof(editline));
 
-//    wifiManager.autoConnect(esp_id);
+    wifiManager.autoConnect(espid);
+    udpServer.begin(UDP_PORT);
+    MDNS.begin(espid);
+    MDNS.addService("grayscale", "udp", UDP_PORT);
 
-    draw_init((uint8_t *)framebuffer);
+    draw_init((uint8_t *) framebuffer);
+    draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
+
     led_enable();
 }
 
 void loop(void)
 {
+    // handle incoming UDP frame
+    int udpSize = udpServer.parsePacket();
+    if (udpSize > 0) {
+        int len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
+        if (len == sizeof(udpframe)) {
+            memcpy(framebuffer, udpframe, sizeof(framebuffer));
+        }
+    }
     // parse command line
-    bool haveLine = false;
     if (Serial.available()) {
         char c = Serial.read();
-        haveLine = EditLine(c, &c);
+        bool haveLine = EditLine(c, &c);
         Serial.write(c);
         if (haveLine) {
             int result = cmd_process(commands, editline);
@@ -204,5 +218,6 @@ void loop(void)
         }
     }
     // network update
-//    MDNS.update();
+    MDNS.update();
 }
+
