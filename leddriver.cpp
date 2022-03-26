@@ -14,6 +14,7 @@
 
 static const vsync_fn_t *vsync_fn;
 static uint8_t framebuffer[LED_HEIGHT][LED_WIDTH];
+static uint8_t pwmbuf[LED_HEIGHT][LED_WIDTH];
 static int row = 0;
 static int frame = 0;
 
@@ -36,8 +37,13 @@ static void IRAM_ATTR led_hsync(void)
     // write column data
     if (row < 7) {
         // write the column shift registers
+        uint8_t *rowbuf = pwmbuf[row];
         for (int col = 0; col < LED_WIDTH; col++) {
-            uint8_t c = framebuffer[row][col] ? 1 : 0;
+            int val = rowbuf[col];
+            val += framebuffer[row][col];
+            rowbuf[col] = val;
+        
+            uint8_t c = val > 255;
 
             // write data
             FAST_GPIO_WRITE(PIN_SCLK, 0);
@@ -88,6 +94,13 @@ void led_init(const vsync_fn_t * vsync)
     // clear the frame buffer
     memset(framebuffer, 0, sizeof(framebuffer));
 
+    // initialise PWM buffer
+    for (int y = 0; y < LED_HEIGHT; y++) {
+        for (int x = 0; x < LED_WIDTH; x++) {
+            pwmbuf[y][x] = random(255);
+        }
+    }
+
     // initialise timer
     timer1_isr_init();
 }
@@ -97,7 +110,7 @@ void led_enable(void)
     // set up timer interrupt
     timer1_disable();
     timer1_attachInterrupt(led_hsync);
-    timer1_write(12500);        // fps = 555555/number
+    timer1_write(500);        // fps = 555555/number
     timer1_enable(TIM_DIV16, TIM_EDGE, TIM_LOOP);
 }
 

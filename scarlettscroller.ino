@@ -55,27 +55,22 @@ static int do_pat(int argc, char *argv[])
         draw_fill(0);
         break;
     case 1:
-        print("All red\n");
+        print("All on\n");
         draw_fill(255);
         break;
     case 2:
-        print("Top half\n");
-        memset(framebuffer, 0, sizeof(framebuffer));
-        memset(framebuffer, 1, sizeof(framebuffer) / 2);
-        break;
-    case 3:
-        print("Left half\n");
+        print("Every other pixel\n");
         for (int y = 0; y < 7; y++) {
             for (int x = 0; x < 80; x++) {
-                framebuffer[y][x] = (x < 40) ? 1 : 0;
+                framebuffer[y][x] = (x + y) & 1 ? 255 : 0;
             }
         }
         break;
-    case 4:
-        print("Blokjes\n");
+    case 3:
+        print("Horizontal gradient\n");
         for (int y = 0; y < 7; y++) {
             for (int x = 0; x < 80; x++) {
-                framebuffer[y][x] = (x + y) & 1;
+                framebuffer[y][x] = map(x, 0, 80, 0, 256);
             }
         }
         break;
