@@ -168,14 +168,14 @@ void setup(void)
     print("\n%s\n", espid);
 
     EditInit(editline, sizeof(editline));
+    draw_init((uint8_t *) framebuffer);
 
     wifiManager.autoConnect(espid);
+
+    draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
     udpServer.begin(UDP_PORT);
     MDNS.begin(espid);
     MDNS.addService("grayscale", "udp", UDP_PORT);
-
-    draw_init((uint8_t *) framebuffer);
-    draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
 
     led_enable();
 }
