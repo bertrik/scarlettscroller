@@ -9,8 +9,7 @@
 #define PIN_B       D3
 #define PIN_C       D4
 #define PIN_SCLK    D5
-#define PIN_R       D6
-#define PIN_G       D7
+#define PIN_G       D6
 
 static const vsync_fn_t *vsync_fn;
 static uint8_t framebuffer[LED_HEIGHT][LED_WIDTH];
@@ -20,19 +19,25 @@ static int frame = 0;
 
 #define FAST_GPIO_WRITE(pin,val) if (val) GPOS = 1<<(pin); else GPOC = 1<<(pin)
 
-static void rowselect(int select)
+static void mux_clear(void)
 {
-    // set the row multiplexer
-    FAST_GPIO_WRITE(PIN_A, select & 1);
-    FAST_GPIO_WRITE(PIN_B, select & 2);
-    FAST_GPIO_WRITE(PIN_C, select & 4);
+    GPOC = (1 << PIN_A) | (1 << PIN_B) | (1 << PIN_C);
+}
+
+static void mux_set(int select)
+{
+    uint16_t val = 0;
+    val |= (select & 1) ? (1 << PIN_A) : 0;
+    val |= (select & 2) ? (1 << PIN_B) : 0;
+    val |= (select & 4) ? (1 << PIN_C) : 0;
+    GPOS = val;
 }
 
 // "horizontal" interrupt routine, displays one line
 static void IRAM_ATTR led_hsync(void)
 {
     // blank the display by selecting row 0
-    rowselect(0);
+    mux_clear();
 
     // write column data
     if (row < 7) {
@@ -52,7 +57,7 @@ static void IRAM_ATTR led_hsync(void)
 
         // next row and set row multiplexer
         row++;
-        rowselect(row);
+        mux_set(row);
     } else {
         // a dark vsync frame, allows application to update the frame buffer
         vsync_fn(frame++);
@@ -76,9 +81,6 @@ void led_init(const vsync_fn_t * vsync)
 
     pinMode(PIN_C, OUTPUT);
     digitalWrite(PIN_C, 0);
-
-    pinMode(PIN_R, OUTPUT);
-    digitalWrite(PIN_R, 0);
 
     pinMode(PIN_G, OUTPUT);
     digitalWrite(PIN_G, 0);
@@ -114,11 +116,11 @@ void led_enable(void)
 
 void led_disable(void)
 {
+    // select invisible row
+    mux_clear();
+
     // detach the interrupt routine
     timer1_detachInterrupt();
     timer1_disable();
-    
-    // select invisible row
-    rowselect(0);
 }
 
