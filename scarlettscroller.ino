@@ -13,6 +13,8 @@
 #include <Arduino.h>
 #include <WiFiUdp.h>
 
+#include <ArduinoOTA.h>
+
 #define print Serial.printf
 #define UDP_PORT    8888
 
@@ -162,7 +164,6 @@ void setup(void)
 {
     led_init(vsync);
 
-    // get ESP id
     snprintf(espid, sizeof(espid), "scarlett-%06x", ESP.getChipId());
     Serial.begin(115200);
     print("\n%s\n", espid);
@@ -171,11 +172,34 @@ void setup(void)
     draw_init((uint8_t *) framebuffer);
 
     wifiManager.autoConnect(espid);
-
     draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
     udpServer.begin(UDP_PORT);
     MDNS.begin(espid);
     MDNS.addService("grayscale", "udp", UDP_PORT);
+
+    ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
+        for (int x = 0; x < LED_WIDTH; x++) {
+            if ((x < 5) || (x > 75)) {
+                draw_vline(x, 0);
+            } else {
+                uint8_t c;
+                if ((x == 5) || (x == 75)) {
+                    c = 255;
+                } else {
+                    int l = map(progress, 0, total, 5, 75);
+                    c = (x < l) ? 32 : 0;
+                }
+                draw_pixel(x, 0, 0);
+                draw_pixel(x, 1, 255);
+                draw_pixel(x, 2, c);
+                draw_pixel(x, 3, c);
+                draw_pixel(x, 4, c);
+                draw_pixel(x, 5, 255);
+                draw_pixel(x, 6, 0);
+            }
+        }
+    });
+    ArduinoOTA.begin();
 
     led_enable();
 }
@@ -219,5 +243,6 @@ void loop(void)
     }
     // network update
     MDNS.update();
+    ArduinoOTA.handle();
 }
 
