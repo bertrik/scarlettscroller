@@ -19,12 +19,12 @@ static int frame = 0;
 
 #define FAST_GPIO_WRITE(pin,val) if (val) GPOS = 1<<(pin); else GPOC = 1<<(pin)
 
-static void mux_clear(void)
+static void IRAM_ATTR mux_clear(void)
 {
     GPOC = (1 << PIN_A) | (1 << PIN_B) | (1 << PIN_C);
 }
 
-static void mux_set(int select)
+static void IRAM_ATTR mux_set(int select)
 {
     uint16_t val = 0;
     val |= (select & 1) ? (1 << PIN_A) : 0;
@@ -65,7 +65,7 @@ static void IRAM_ATTR led_hsync(void)
     }
 }
 
-void led_write_framebuffer(const void *data)
+void IRAM_ATTR led_write_framebuffer(const void *data)
 {
     memcpy(framebuffer, data, sizeof(framebuffer));
 }
