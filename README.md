@@ -1,2 +1,2 @@
 # scarlettscroller
-Arduino firmware for controlling an 80x8 red LED scroller
+Arduino firmware for controlling an 80x7 red AM03127 red LED display
