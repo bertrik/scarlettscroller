@@ -74,13 +74,9 @@ void led_init(const vsync_fn_t * vsync)
 {
     // set all pins to a defined state
     pinMode(PIN_A, OUTPUT);
-    digitalWrite(PIN_A, 0);
-
     pinMode(PIN_B, OUTPUT);
-    digitalWrite(PIN_B, 0);
-
     pinMode(PIN_C, OUTPUT);
-    digitalWrite(PIN_C, 0);
+    mux_clear();
 
     pinMode(PIN_G, OUTPUT);
     digitalWrite(PIN_G, 0);
