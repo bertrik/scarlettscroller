@@ -26,6 +26,9 @@ static char espid[64];
 static char editline[120];
 static uint8_t framebuffer[LED_HEIGHT][LED_WIDTH];
 static volatile uint32_t frame_counter = 0;
+static uint8_t gamma_correction[16] = {
+    0, 1, 5, 10, 18, 28, 40, 55, 72, 92, 113, 137, 163, 192, 222, 255
+};
 
 static int do_pix(int argc, char *argv[])
 {
@@ -211,7 +214,14 @@ void loop(void)
     if (udpSize > 0) {
         int len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
         if (len == sizeof(udpframe)) {
-            memcpy(framebuffer, udpframe, sizeof(framebuffer));
+            // apply gamma correction
+            int i = 0;
+            for (int y = 0; y < LED_HEIGHT; y++) {
+                for (int x = 0; x < LED_WIDTH; x++) {
+                    uint8_t c = udpframe[i++];
+                    framebuffer[y][x] = gamma_correction[c >> 4];
+                }
+            }
         }
     }
     // parse command line
@@ -245,4 +255,3 @@ void loop(void)
     MDNS.update();
     ArduinoOTA.handle();
 }
-
