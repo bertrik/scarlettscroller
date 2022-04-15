@@ -219,7 +219,7 @@ void loop(void)
             for (int y = 0; y < LED_HEIGHT; y++) {
                 for (int x = 0; x < LED_WIDTH; x++) {
                     uint8_t c = udpframe[i++];
-                    framebuffer[y][x] = gamma_correction[c >> 4];
+                    draw_pixel(x, y, gamma_correction[c >> 4]);
                 }
             }
         }
