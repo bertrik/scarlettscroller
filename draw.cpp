@@ -7,6 +7,7 @@
 
 static uint8_t *_framebuffer;
 static uint8_t gamma_corr[256];
+static bool fliph, flipv;
 
 void draw_init(uint8_t *framebuffer, double gamma)
 {
@@ -14,12 +15,26 @@ void draw_init(uint8_t *framebuffer, double gamma)
     for (int i = 0; i < 256; i++) {
         gamma_corr[i] = round(pow(i / 255.0, gamma) * 255);
     }
+    fliph = false;
+    flipv = false;
+}
+
+void draw_flip(bool horizontal, bool vertical)
+{
+    fliph = horizontal;
+    flipv = vertical;
 }
 
 bool draw_pixel(int x, int y, uint8_t c)
 {
     if ((x < 0) || (x >= LED_WIDTH) || (y < 0) || (y >= LED_HEIGHT)) {
         return false;
+    }
+    if (fliph) {
+        x = LED_WIDTH - 1 - x;
+    }
+    if (flipv) {
+        y = LED_HEIGHT - 1 - y;
     }
     _framebuffer[y * LED_WIDTH + x] = gamma_corr[c];
     return true;

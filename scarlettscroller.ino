@@ -173,6 +173,7 @@ void setup(void)
 
     EditInit(editline, sizeof(editline));
     draw_init((uint8_t *) framebuffer, 2.2);
+    draw_flip(true, true);
 
     wifiManager.autoConnect(espid);
     draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
