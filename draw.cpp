@@ -1,14 +1,19 @@
 #include <string.h>
+#include <math.h>
 
 #include "font.h"
 #include "framebuffer.h"
 #include "draw.h"
 
 static uint8_t *_framebuffer;
+static uint8_t gamma_corr[256];
 
-void draw_init(uint8_t *framebuffer)
+void draw_init(uint8_t *framebuffer, double gamma)
 {
     _framebuffer = framebuffer;
+    for (int i = 0; i < 256; i++) {
+        gamma_corr[i] = round(pow(i / 255.0, gamma) * 255);
+    }
 }
 
 bool draw_pixel(int x, int y, uint8_t c)
@@ -16,7 +21,7 @@ bool draw_pixel(int x, int y, uint8_t c)
     if ((x < 0) || (x >= LED_WIDTH) || (y < 0) || (y >= LED_HEIGHT)) {
         return false;
     }
-    _framebuffer[y * LED_WIDTH + x] = c;
+    _framebuffer[y * LED_WIDTH + x] = gamma_corr[c];
     return true;
 }
 
