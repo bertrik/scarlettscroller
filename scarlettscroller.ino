@@ -212,7 +212,6 @@ void loop(void)
     if (udpSize > 0) {
         int len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
         if (len == sizeof(udpframe)) {
-            // apply gamma correction
             int i = 0;
             for (int y = 0; y < LED_HEIGHT; y++) {
                 for (int x = 0; x < LED_WIDTH; x++) {
