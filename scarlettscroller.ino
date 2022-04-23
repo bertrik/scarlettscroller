@@ -20,12 +20,17 @@
 
 static WiFiManager wifiManager;
 static WiFiUDP udpServer;
+static WiFiUDP textServer;
 static uint8_t udpframe[LED_HEIGHT * LED_WIDTH];
 
 static char espid[64];
 static char editline[120];
 static uint8_t framebuffer[LED_HEIGHT][LED_WIDTH];
 static volatile uint32_t frame_counter = 0;
+
+static int scrolling = 0;
+static char scroll_buf[1501];
+static int scroll_pos = 0;
 
 static int do_pix(int argc, char *argv[])
 {
@@ -178,6 +183,9 @@ void setup(void)
     MDNS.begin(espid);
     MDNS.addService("grayscale", "udp", UDP_PORT);
 
+    textServer.begin(5000);
+    MDNS.addService("text", "udp", 5000);
+
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         for (int x = 0; x < LED_WIDTH; x++) {
             if ((x < 5) || (x > 75)) {
@@ -188,7 +196,7 @@ void setup(void)
                     c = 255;
                 } else {
                     int l = map(progress, 0, total, 5, 75);
-                    c = (x < l) ? 32 : 0;
+                    c = (x < l) ? 64 : 0;
                 }
                 draw_pixel(x, 0, 0);
                 draw_pixel(x, 1, 255);
@@ -207,11 +215,37 @@ void setup(void)
 
 void loop(void)
 {
-    // handle incoming UDP frame
-    int udpSize = udpServer.parsePacket();
-    if (udpSize > 0) {
-        int len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
-        if (len == sizeof(udpframe)) {
+    static int scroll_tick_last = -1;
+
+    // handle currently scrolling text with priority
+    if (scrolling > 0) {
+        int scroll_tick = millis() / 20;
+        if (scroll_tick != scroll_tick_last) {
+            scroll_tick_last = scroll_tick;
+            if (draw_text(scroll_buf, scroll_pos, 255, 0) < 0) {
+                scroll_pos = LED_WIDTH;
+                scrolling--;
+            } else {
+                scroll_pos--;
+            }
+        }
+    } else {
+        // handle incoming UDP text
+        int udpSize = textServer.parsePacket();
+        if (udpSize > 0) {
+            size_t len = textServer.read((uint8_t *) udpframe, sizeof(udpframe));
+            if (len < sizeof(scroll_buf)) {
+                memcpy(scroll_buf, udpframe, len);
+                scroll_buf[len] = 0;
+                scrolling = 3;
+                scroll_pos = LED_WIDTH;
+            }
+        }
+
+        // handle incoming UDP frame
+        udpSize = udpServer.parsePacket();
+        if (udpSize == (LED_HEIGHT * LED_WIDTH)) {
+            udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
             int i = 0;
             for (int y = 0; y < LED_HEIGHT; y++) {
                 for (int x = 0; x < LED_WIDTH; x++) {
@@ -221,6 +255,7 @@ void loop(void)
             }
         }
     }
+
     // parse command line
     if (Serial.available()) {
         char c = Serial.read();
