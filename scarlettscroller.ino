@@ -244,13 +244,15 @@ void loop(void)
 
         // handle incoming UDP frame
         udpSize = udpServer.parsePacket();
-        if (udpSize == (LED_HEIGHT * LED_WIDTH)) {
-            udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
-            int i = 0;
-            for (int y = 0; y < LED_HEIGHT; y++) {
-                for (int x = 0; x < LED_WIDTH; x++) {
-                    uint8_t c = udpframe[i++];
-                    draw_pixel(x, y, c);
+        if (udpSize > 0) {
+            size_t len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
+            if (len == (LED_HEIGHT * LED_WIDTH)) {
+                int i = 0;
+                for (int y = 0; y < LED_HEIGHT; y++) {
+                    for (int x = 0; x < LED_WIDTH; x++) {
+                        uint8_t c = udpframe[i++];
+                        draw_pixel(x, y, c);
+                    }
                 }
             }
         }
