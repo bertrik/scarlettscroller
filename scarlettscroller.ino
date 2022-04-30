@@ -18,6 +18,9 @@
 #define print Serial.printf
 #define UDP_PORT    8888
 
+#define MY_NTP_SERVER "nl.pool.ntp.org"
+#define MY_TZ "CET-1CEST,M3.5.0/02,M10.5.0/03"
+
 static WiFiManager wifiManager;
 static WiFiUDP udpServer;
 static WiFiUDP textServer;
@@ -178,6 +181,7 @@ void setup(void)
     draw_flip(true, true);
 
     wifiManager.autoConnect(espid);
+    configTime(MY_TZ, MY_NTP_SERVER);
     draw_text(WiFi.localIP().toString().c_str(), 0, 255, 0);
     udpServer.begin(UDP_PORT);
     MDNS.begin(espid);
@@ -196,7 +200,7 @@ void setup(void)
                     c = 255;
                 } else {
                     int l = map(progress, 0, total, 5, 75);
-                    c = (x < l) ? 64 : 0;
+                    c = (x < l) ? 128 : 0;
                 }
                 draw_pixel(x, 0, 0);
                 draw_pixel(x, 1, 255);
@@ -216,6 +220,9 @@ void setup(void)
 void loop(void)
 {
     static int scroll_tick_last = -1;
+    static unsigned long last_activity = 0;
+
+    unsigned long ms = millis();
 
     // handle currently scrolling text with priority
     if (scrolling > 0) {
@@ -245,15 +252,28 @@ void loop(void)
         // handle incoming UDP frame
         udpSize = udpServer.parsePacket();
         if (udpSize > 0) {
-            size_t len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
+            int len = udpServer.read((uint8_t *) udpframe, sizeof(udpframe));
             if (len == (LED_HEIGHT * LED_WIDTH)) {
-                int i = 0;
-                for (int y = 0; y < LED_HEIGHT; y++) {
-                    for (int x = 0; x < LED_WIDTH; x++) {
-                        uint8_t c = udpframe[i++];
-                        draw_pixel(x, y, c);
-                    }
+                for (int i = 0; i < len; i++) {
+                    draw_pixel(i % LED_WIDTH, i / LED_WIDTH, udpframe[i]);
                 }
+            }
+            last_activity = ms;
+        }
+
+        // show time when idle for a while
+        if ((ms - last_activity) > 60000) {
+            static int sec_last = 0;
+            int sec = ms / 1000;
+            if (sec != sec_last) {
+                sec_last = sec;
+                time_t now;
+                time(&now);
+                char timestr[16];
+                struct tm * info = localtime (&now);
+                sprintf(timestr, "%02d:%02d:%02d", info->tm_hour, info->tm_min, info->tm_sec);
+                draw_clear();
+                draw_text(timestr, 19, 255, 0);
             }
         }
     }
