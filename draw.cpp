@@ -25,6 +25,11 @@ void draw_flip(bool horizontal, bool vertical)
     flipv = vertical;
 }
 
+void draw_clear(void)
+{
+    memset(_framebuffer, 0, LED_WIDTH * LED_HEIGHT);
+}
+
 bool draw_pixel(int x, int y, uint8_t c)
 {
     if ((x < 0) || (x >= LED_WIDTH) || (y < 0) || (y >= LED_HEIGHT)) {
