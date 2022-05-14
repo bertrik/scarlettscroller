@@ -161,13 +161,11 @@ static int do_help(int argc, char *argv[])
     return CMD_OK;
 }
 
-static void draw_time(void)
+static void draw_time(time_t now)
 {
-    time_t now;
     char timestr[16];
 
-    time(&now);
-    struct tm * info = localtime (&now);
+    struct tm * info = localtime(&now);
     sprintf(timestr, "%02d:%02d:%02d", info->tm_hour, info->tm_min, info->tm_sec);
 
     // draw fancy background
@@ -281,11 +279,12 @@ void loop(void)
 
         // show time when idle for a while
         if ((ms - last_activity) > 60000) {
-            static int sec_last = 0;
-            int sec = ms / 1000;
-            if (sec != sec_last) {
-                sec_last = sec;
-                draw_time();
+            static time_t previous;
+            time_t now;
+            time(&now);
+            if (now != previous) {
+                previous = now;
+                draw_time(now);
             }
         }
     }
