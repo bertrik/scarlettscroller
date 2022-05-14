@@ -192,26 +192,23 @@ void setup(void)
 
     ArduinoOTA.onProgress([](unsigned int progress, unsigned int total) {
         for (int x = 0; x < LED_WIDTH; x++) {
-            if ((x < 5) || (x > 75)) {
-                draw_vline(x, 0);
+            uint8_t c;
+            if ((x == 0) || (x == 79)) {
+                c = 255;
             } else {
-                uint8_t c;
-                if ((x == 5) || (x == 75)) {
-                    c = 255;
-                } else {
-                    int l = map(progress, 0, total, 5, 75);
-                    c = (x < l) ? 128 : 0;
-                }
-                draw_pixel(x, 0, 0);
-                draw_pixel(x, 1, 255);
-                draw_pixel(x, 2, c);
-                draw_pixel(x, 3, c);
-                draw_pixel(x, 4, c);
-                draw_pixel(x, 5, 255);
-                draw_pixel(x, 6, 0);
+                int l = map(progress, 0, total, 0, 80);
+                c = (x < l) ? 128 : 0;
             }
+            draw_pixel(x, 0, 0);
+            draw_pixel(x, 1, 255);
+            draw_pixel(x, 2, c);
+            draw_pixel(x, 3, c);
+            draw_pixel(x, 4, c);
+            draw_pixel(x, 5, 255);
+            draw_pixel(x, 6, 0);
         }
     });
+    ArduinoOTA.onEnd([](){draw_clear();});
     ArduinoOTA.begin();
 
     led_enable();
