@@ -161,6 +161,27 @@ static int do_help(int argc, char *argv[])
     return CMD_OK;
 }
 
+static void draw_time(void)
+{
+    time_t now;
+    char timestr[16];
+
+    time(&now);
+    struct tm * info = localtime (&now);
+    sprintf(timestr, "%02d:%02d:%02d", info->tm_hour, info->tm_min, info->tm_sec);
+
+    // draw fancy background
+    draw_clear();
+    for (int x = 0; x < 18; x++) {
+        uint8_t c = (255 - 12 * x);
+        draw_vline(x, c);
+        draw_vline(LED_WIDTH - 1 - x, c);
+    }
+
+    // draw time
+    draw_text(timestr, 19, 255, 0);
+}
+
 // vsync callback
 static void IRAM_ATTR vsync(int frame_nr)
 {
@@ -264,13 +285,7 @@ void loop(void)
             int sec = ms / 1000;
             if (sec != sec_last) {
                 sec_last = sec;
-                time_t now;
-                time(&now);
-                char timestr[16];
-                struct tm * info = localtime (&now);
-                sprintf(timestr, "%02d:%02d:%02d", info->tm_hour, info->tm_min, info->tm_sec);
-                draw_clear();
-                draw_text(timestr, 19, 255, 0);
+                draw_time();
             }
         }
     }
