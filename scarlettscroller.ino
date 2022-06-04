@@ -260,7 +260,7 @@ void loop(void)
             if (len < sizeof(scroll_buf)) {
                 memcpy(scroll_buf, udpframe, len);
                 scroll_buf[len] = 0;
-                scrolling = 3;
+                scrolling = 1;
                 scroll_pos = LED_WIDTH;
             }
         }
