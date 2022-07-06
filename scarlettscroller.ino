@@ -18,7 +18,7 @@
 #define print Serial.printf
 #define UDP_PORT    8888
 
-#define MY_NTP_SERVER "ticktack.local"
+#define MY_NTP_SERVER "nl.pool.ntp.org"
 #define MY_TZ "CET-1CEST,M3.5.0/02,M10.5.0/03"
 
 static WiFiManager wifiManager;
